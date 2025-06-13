@@ -1,0 +1,64 @@
+<!-- templates/submit.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="form-container">
+    <h2>Submit New Ticket</h2>
+    <form method="POST" action="{{ url_for('submit_ticket') }}">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+            {{ form.ticket_id.label }}<br>
+            {{ form.ticket_id(class="form-select") }}
+        </div>
+        <div class="mb-3">
+            {{ form.cf_merchant_id.label }}<br>
+            {{ form.cf_merchant_id(class="form-control") }}
+        </div>
+        <!-- Add other fields here -->
+        <div class="mb-3">
+            {{ form.cf_contact_number.label }}<br>
+            {{ form.cf_contact_number(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.cf_product.label }}<br>
+            {{ form.cf_product(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.cf_platform.label }}<br>
+            {{ form.cf_platform(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.cf_platform_item.label }}<br>
+            {{ form.cf_platform_item(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.cf_checkout.label }}<br>
+            {{ form.cf_checkout(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.cf_issue_category.label }}<br>
+            {{ form.cf_issue_category(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.cf_issue_sub_category.label }}<br>
+            {{ form.cf_issue_sub_category(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.description_text.label }}<br>
+            {{ form.description_text(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.cf_agent_category.label }}<br>
+            {{ form.cf_agent_category(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.cf_agent_sub_category.label }}<br>
+            {{ form.cf_agent_sub_category(class="form-control") }}
+        </div>
+
+        <div class="mt-4">
+            {{ form.submit(class="btn btn-primary") }}
+        </div>
+    </form>
+</div>
+{% endblock %}

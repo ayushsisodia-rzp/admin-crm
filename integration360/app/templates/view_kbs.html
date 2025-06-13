@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Case Study</title>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-accent: #5ED3F3;
+            --dark-bg: #082836;
+            --card-bg: #0a2b36;
+            --text-primary: #E3F8FF;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #06141D, #0B2B3C);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            width: 250px;
+            background: #1E3A47;
+            position: fixed;
+            height: 100%;
+            z-index: 100;
+            box-shadow: 3px 0 15px rgba(0,0,0,0.2);
+        }
+        
+        .content {
+            margin-left: 270px;
+            padding: 20px;
+            width: calc(100% - 270px);
+        }
+        
+        .filter-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .kb-table {
+            background: var(--card-bg);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .kb-table th {
+            background: #1E3A47;
+            color: var(--primary-accent);
+        }
+        
+        .kb-table td {
+            color: white;
+        }
+        
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .status-approved {
+            background-color: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+        }
+        
+        .status-pending {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+        
+        .status-declined {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+        }
+        
+        .nav-link {
+            color: var(--text-primary);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .nav-link:hover {
+            background: #2a4b5a;
+            transform: translateX(5px);
+        }
+        
+        .nav-link.active {
+            background: var(--primary-accent);
+            color: var(--dark-bg);
+        }
+        
+        .modal-content {
+            color: white;
+        }
+
+        /* Multi-select styling */
+        .form-select[multiple] {
+            height: auto;
+            min-height: 120px;
+        }
+
+        .form-select[multiple] option {
+            padding: 8px 12px;
+            border-bottom: 1px solid #1c4e5e;
+        }
+
+        .form-select[multiple] option:checked {
+            background-color: var(--primary-accent);
+            color: var(--dark-bg);
+        }
+    </style>
+</head>
+<body>
+    <a href="{{ url_for('logout') }}" class="btn btn-danger" 
+       style="position: fixed; right: 30px; top: 30px; z-index: 1000;">
+       <i class="fas fa-sign-out-alt"></i> Logout
+    </a>
+
+    <div class="sidebar position-fixed left">
+        <div class="p-3">
+            <h4 class="text-center mb-4 text-primary">Admin Portal</h4>
+            <nav class="nav flex-column">
+                <a class="nav-link py-3" href="{{ url_for('welcome_admin') }}">
+                    <i class="fas fa-home me-2"></i>Home
+                </a>
+                <a class="nav-link py-3" href="{{ url_for('ticket_requests') }}">
+                    <i class="fas fa-inbox me-2"></i>KB Requests
+                </a>
+                <a class="nav-link py-3" href="{{ url_for('approved_tickets_admin') }}">
+                    <i class="fas fa-tachometer-alt me-2"></i>KB Dashboard
+                </a>
+                <a class="nav-link py-3" href="{{ url_for('approve_kbs') }}">
+                    <i class="fas fa-check-circle me-2"></i>Approve Case Study
+                </a>
+                <a class="nav-link py-3 active" href="{{ url_for('view_kbs') }}">
+                    <i class="fas fa-tasks me-2"></i>View Case Study
+                </a>
+                <a class="nav-link py-3" href="{{ url_for('leaderboard') }}">
+                    <i class="fas fa-tasks me-2"></i>Leaderboard
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <div class="content">
+        <h2 class="mb-4">Case Study Dashboard</h2>
+        
+        <!-- Filters Card -->
+        <div class="filter-card mb-4">
+            <form method="get" action="{{ url_for('view_kbs') }}">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="statusFilter" class="form-label">Status</label>
+                        <select class="form-select" id="statusFilter" name="status_filter">
+                            <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Statuses</option>
+                            {% for status in statuses %}
+                            <option value="{{ status }}" {% if status_filter == status %}selected{% endif %}>{{ status|title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="industryFilter" class="form-label">Industry</label>
+                        <select class="form-select" id="industryFilter" name="industry_filter">
+                            <option value="all" {% if industry_filter == 'all' %}selected{% endif %}>All Industries</option>
+                            {% for industry in industries %}
+                            <option value="{{ industry }}" {% if industry_filter == industry %}selected{% endif %}>{{ industry }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="productFilter" class="form-label">Product</label>
+                        <select class="form-select" id="productFilter" name="product_filter">
+                            <option value="all" {% if product_filter == 'all' %}selected{% endif %}>All Products</option>
+                            {% for product in products %}
+                            <option value="{{ product }}" {% if product_filter == product %}selected{% endif %}>{{ product }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-filter me-2"></i>Apply Filters
+                        </button>
+                        <a href="{{ url_for('view_kbs') }}" class="btn btn-outline-secondary ms-2">
+                            <i class="fas fa-times me-2"></i>Clear Filters
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- KBs Table -->
+        <div class="kb-table table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Industry</th>
+                        <th>Checkout Type</th>
+                        <th>Products</th>
+                        <th>Status</th>
+                        <th>Submitted By</th>
+                        <th>Submitted At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if kbs %}
+                        {% for kb in kbs %}
+                        <tr>
+                            <td>{{ kb[0] }}</td>
+                            <td>{{ kb[1] }}</td>
+                            <td>{{ kb[2] }}</td>
+                            <td>{{ kb[3] }}</td>
+                            <td>
+                                <span class="status-badge status-{{ kb[12] }}">
+                                    {{ kb[12]|upper }}
+                                </span>
+                            </td>
+                            <td>{{ kb[13] }}</td>
+                            <td>{{ kb[14] }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#kbDetailsModal" 
+                                    onclick="showKBDetails({{ kb[0] }})">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="10" class="text-center">No Case Study entries found</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- KB Details Modal -->
+    <div class="modal fade" id="kbDetailsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" style="background: var(--card-bg); color: var(--text-primary);">
+                <div class="modal-header">
+                    <h5 class="modal-title">Case Study Details - #<span id="kbModalId"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="kbDetailsContent">
+                    <!-- Dynamic content will be inserted here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showKBDetails(kbId) {
+            fetch(`/get_kb_details/${kbId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById('kbDetailsContent').innerHTML = `
+                            <div class="alert alert-danger">${data.error}</div>
+                        `;
+                        return;
+                    }
+    
+                    const products = Array.isArray(data.products) ? 
+                        data.products.join(', ') : 
+                        data.products;
+    
+                    // Handle single attachment
+                    let attachmentHtml = '';
+                    if (data.attachment) {
+                        const fileName = data.attachment.split('/').pop();
+                        attachmentHtml = `
+                            <div class="mb-3">
+                                <h5>Attachment</h5>
+                                <div class="p-3 bg-secondary bg-opacity-10 rounded">
+                                    <a href="/download_kb_attachment/${fileName}" 
+                                       class="btn btn-sm btn-outline-primary" 
+                                       target="_blank">
+                                        <i class="fas fa-download me-1"></i> ${fileName}
+                                    </a>
+                                </div>
+                            </div>
+                        `;
+                    }
+    
+                    document.getElementById('kbDetailsContent').innerHTML = `
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p><strong>Industry:</strong> ${data.industry || 'N/A'}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Product Name:</strong> ${products || 'N/A'}</p>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p><strong>Checkout Type:</strong> ${data.checkout_type || 'N/A'}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Status:</strong> 
+                                    <span class="status-badge status-${data.status}">
+                                        ${data.status ? data.status.toUpperCase() : 'N/A'}
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <h5>About the Merchant</h5>
+                            <div class="p-3 bg-secondary bg-opacity-10 rounded">
+                                ${data.about_merchant || 'N/A'}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <h5>Use Case</h5>
+                            <div class="p-3 bg-secondary bg-opacity-10 rounded">
+                                ${data.use_case || 'N/A'}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <h5>Business Challenges</h5>
+                            <div class="p-3 bg-secondary bg-opacity-10 rounded">
+                                ${data.business_challenges || 'N/A'}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <h5>Challenges</h5>
+                            <div class="p-3 bg-secondary bg-opacity-10 rounded">
+                                ${data.challenges || 'N/A'}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <h5>Proposed Solution</h5>
+                            <div class="p-3 bg-secondary bg-opacity-10 rounded">
+                                ${data.proposed_solution || 'N/A'}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <h5>Impact</h5>
+                            <div class="p-3 bg-secondary bg-opacity-10 rounded">
+                                ${data.impact || 'N/A'}
+                            </div>
+                        </div>
+                        ${attachmentHtml}
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p><strong>Submitted By:</strong> ${data.submitted_by || 'N/A'}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Submitted At:</strong> ${data.submitted_at || 'N/A'}</p>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <h5>Comments</h5>
+                            <div class="p-3 bg-secondary bg-opacity-10 rounded">
+                                ${data.comments || 'No comments available'}
+                            </div>
+                        </div>
+                    `;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('kbDetailsContent').innerHTML = `
+                        <div class="alert alert-danger">Error loading Case Study details</div>
+                    `;
+                });
+        }
+    </script>
+</body>
+</html>

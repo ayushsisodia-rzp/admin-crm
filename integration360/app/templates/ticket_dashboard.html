@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --primary-accent: #5ED3F3;
+            --dark-bg: #082836;
+            --card-bg: #0a2b36;
+            --text-primary: #E3F8FF;
+        }
+
+        body {
+            background: linear-gradient(135deg, #06141D, #0B2B3C);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: #1E3A47;
+            position: fixed;
+            height: 100%;
+            z-index: 100;
+            box-shadow: 3px 0 15px rgba(0,0,0,0.2);
+        }
+
+        .content {
+            margin-left: 270px;
+            padding: 20px;
+            width: calc(100% - 270px);
+        }
+
+        .leaderboard-card {
+            background: var(--card-bg);
+            border: 1px solid #1c4e5e;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+            margin-bottom: 30px;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .leaderboard-header {
+            color: #A8FF78;
+            text-shadow: 0 0 10px #A8FF78;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chart-container {
+            height: 400px;
+            margin-bottom: 40px;
+        }
+
+        .nav-link {
+            color: var(--text-primary);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover {
+            background: #2a4b5a;
+            transform: translateX(5px);
+        }
+
+        .nav-link.active {
+            background: var(--primary-accent);
+            color: var(--dark-bg);
+        }
+
+        .user-filter {
+            margin-bottom: 20px;
+        }
+
+        .user-filter select, .user-filter input[type="date"] {
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+            border: 1px solid #1c4e5e;
+            padding: 8px 15px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <a href="{{ url_for('logout') }}" class="btn btn-danger" style="position: fixed; right: 30px; top: 30px; z-index: 1000;">
+        <i class="fas fa-sign-out-alt"></i> Logout
+    </a>
+
+    <div class="sidebar position-fixed left">
+        <div class="p-3">
+            <h4 class="text-center mb-4 text-primary">Admin Portal</h4>
+            <nav class="nav flex-column">
+                <a class="nav-link py-3" href="{{ url_for('welcome_admin') }}">
+                    <i class="fas fa-home me-2"></i>Home
+                </a>
+                <a class="nav-link py-3" href="{{ url_for('ticket_requests') }}">
+                    <i class="fas fa-inbox me-2"></i>KB Requests
+                </a>
+                <a class="nav-link py-3" href="{{ url_for('approved_tickets_admin') }}">
+                    <i class="fas fa-tachometer-alt me-2"></i>KB Dashboard
+                </a>
+                <a class="nav-link py-3" href="{{ url_for('approve_kbs') }}">
+                    <i class="fas fa-check-circle me-2"></i>Approve Case Study
+                </a>
+                <a class="nav-link py-3" href="{{ url_for('view_kbs') }}">
+                    <i class="fas fa-tasks me-2"></i>View Case Study
+                </a>
+                <a class="nav-link py-3 active" href="{{ url_for('ticket_dashboard') }}">
+                    <i class="fas fa-chart-bar me-2"></i>Ticket Stats
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="leaderboard-card">
+            <div class="leaderboard-header">
+                <h2><i class="fas fa-chart-bar me-2"></i> Ticket Stats Dashboard</h2>
+            </div>
+
+            <div class="user-filter d-flex flex-wrap gap-3 mb-3">
+                <div>
+                    <label for="userSelect">Filter by User:</label><br>
+                    <select id="userSelect" onchange="applyFilters()">
+                        <option value="all">All Users</option>
+                        {% for user in usernames %}
+                        <option value="{{ user }}">{{ user }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="startDate">Start Date:</label><br>
+                    <input type="date" id="startDate" onchange="applyFilters()">
+                </div>
+                <div>
+                    <label for="endDate">End Date:</label><br>
+                    <input type="date" id="endDate" onchange="applyFilters()">
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="ticketStatsChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="stackedChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="lineChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="pieChart"></canvas>
+            </div>
+
+            <button class="btn btn-outline-light mt-3" onclick="downloadCSV()">Export to CSV</button>
+        </div>
+    </div>
+
+    <script>
+        const usernames = {{ usernames|tojson }};
+        const resolved = {{ resolved|tojson }};
+        const notResolved = {{ not_resolved|tojson }};
+        const createTicket = {{ create_ticket|tojson }};
+        const dropped = {{ dropped|tojson }};
+        const dates = {{ recorded_at|tojson }};
+
+        let chart, stackedChart, lineChart, pieChart;
+        let filteredIndexes = [];
+
+        function renderAllCharts(labels, r, nr, ct, d, dateValues) {
+            const ctx1 = document.getElementById('ticketStatsChart').getContext('2d');
+            if (chart) chart.destroy();
+            chart = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: 'Resolved', data: r, backgroundColor: 'rgba(168, 255, 120, 0.7)' },
+                        { label: 'Not Resolved', data: nr, backgroundColor: 'rgba(255, 99, 132, 0.7)' },
+                        { label: 'Created Tickets', data: ct, backgroundColor: 'rgba(94, 211, 243, 0.7)' },
+                        { label: 'Dropped', data: d, backgroundColor: 'rgba(255, 206, 86, 0.7)' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { labels: { color: '#E3F8FF' } } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { color: '#E3F8FF' }, grid: { color: 'rgba(28, 78, 94, 0.5)' } },
+                        x: { ticks: { color: '#E3F8FF' }, grid: { color: 'rgba(28, 78, 94, 0.5)' } }
+                    }
+                }
+            });
+
+            const ctx2 = document.getElementById('stackedChart').getContext('2d');
+            if (stackedChart) stackedChart.destroy();
+            stackedChart = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: 'Resolved', data: r, backgroundColor: 'rgba(120, 255, 150, 0.7)' },
+                        { label: 'Not Resolved', data: nr, backgroundColor: 'rgba(255, 99, 132, 0.7)' },
+                        { label: 'Dropped', data: d, backgroundColor: 'rgba(255, 206, 86, 0.7)' }
+                    ]
+                },
+                options: {
+                    plugins: { legend: { labels: { color: '#E3F8FF' } } },
+                    responsive: true,
+                    scales: {
+                        x: { stacked: true, ticks: { color: '#E3F8FF' } },
+                        y: { stacked: true, beginAtZero: true, ticks: { color: '#E3F8FF' } }
+                    }
+                }
+            });
+
+            const ctx3 = document.getElementById('lineChart').getContext('2d');
+            if (lineChart) lineChart.destroy();
+            lineChart = new Chart(ctx3, {
+                type: 'line',
+                data: {
+                    labels: dateValues.map(date => new Date(date).toLocaleDateString()),
+                    datasets: [
+                        {
+                            label: 'Created Tickets',
+                            data: ct,
+                            borderColor: 'rgba(94, 211, 243, 1)',
+                            backgroundColor: 'rgba(94, 211, 243, 0.3)',
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { labels: { color: '#E3F8FF' } } },
+                    scales: {
+                        x: { ticks: { color: '#E3F8FF' } },
+                        y: { ticks: { color: '#E3F8FF' }, beginAtZero: true }
+                    }
+                }
+            });
+
+            const ctx4 = document.getElementById('pieChart').getContext('2d');
+            if (pieChart) pieChart.destroy();
+            let totalResolved = r.reduce((a, b) => a + b, 0);
+            let totalNotResolved = nr.reduce((a, b) => a + b, 0);
+            let totalDropped = d.reduce((a, b) => a + b, 0);
+            pieChart = new Chart(ctx4, {
+                type: 'pie',
+                data: {
+                    labels: ['Resolved', 'Not Resolved', 'Dropped'],
+                    datasets: [{
+                        data: [totalResolved, totalNotResolved, totalDropped],
+                        backgroundColor: [
+                            'rgba(168, 255, 120, 0.7)',
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(255, 206, 86, 0.7)'
+                        ]
+                    }]
+                },
+                options: {
+                    plugins: { legend: { labels: { color: '#E3F8FF' } } }
+                }
+            });
+        }
+
+        function applyFilters() {
+            const selectedUser = document.getElementById('userSelect').value;
+            const startDate = new Date(document.getElementById('startDate').value);
+            const endDate = new Date(document.getElementById('endDate').value);
+            endDate.setHours(23, 59, 59, 999);
+
+            const filteredLabels = [];
+            const r = [], nr = [], ct = [], d = [], timeStamps = [];
+            filteredIndexes = [];
+
+            for (let i = 0; i < usernames.length; i++) {
+                const recordDate = new Date(dates[i]);
+                const userMatch = selectedUser === 'all' || usernames[i] === selectedUser;
+                const dateMatch = (!isNaN(startDate) ? recordDate >= startDate : true) && (!isNaN(endDate) ? recordDate <= endDate : true);
+
+                if (userMatch && dateMatch) {
+                    filteredIndexes.push(i);
+                    filteredLabels.push(usernames[i]);
+                    r.push(resolved[i]);
+                    nr.push(notResolved[i]);
+                    ct.push(createTicket[i]);
+                    d.push(dropped[i]);
+                    timeStamps.push(dates[i]);
+                }
+            }
+
+            renderAllCharts(filteredLabels, r, nr, ct, d, timeStamps);
+        }
+
+        function downloadCSV() {
+            let csv = 'User,Resolved,Not Resolved,Created Tickets,Dropped\n';
+            for (let i of filteredIndexes) {
+                csv += `${usernames[i]},${resolved[i]},${notResolved[i]},${createTicket[i]},${dropped[i]}\n`;
+            }
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'ticket_stats_filtered.csv';
+            link.click();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            applyFilters();
+        });
+    </script>
+</body>
+</html>

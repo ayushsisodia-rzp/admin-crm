@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pending KBs</title>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-accent: #5ED3F3;
+            --dark-bg: #082836;
+            --card-bg: #0a2b36;
+            --text-primary: #E3F8FF;
+        }
+
+        body {
+            background: linear-gradient(135deg, #06141D, #0B2B3C);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        .sidebar {
+            width: 250px;
+            height: 100%;
+            background: #1E3A47;
+            transition: transform 0.3s ease;
+            box-shadow: 3px 0 15px rgba(0,0,0,0.2);
+        }
+
+        .content {
+            margin-left: 270px;
+            transition: margin 0.3s ease;
+        }
+
+        .ticket-card {
+            background: var(--card-bg);
+            border: 1px solid #1c4e5e;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+            transform: translateY(0);
+        }
+
+        .ticket-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(94, 211, 243, 0.1);
+            border-color: var(--primary-accent);
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+            background-color: #ffc107; /* Yellow for pending status */
+        }
+
+        /* Form styles */
+        .form-container {
+            max-width: 800px;
+            animation: fadeIn 1s ease-in-out;
+            margin: 20px auto;
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+        }
+
+        .form-control {
+            background-color: #0a2b36;
+            color: var(--text-primary);
+            border: 1px solid #1c4e5e;
+        }
+
+        .form-control:focus {
+            background-color: #0a2b36;
+            color: var(--text-primary);
+            border-color: var(--primary-accent);
+            box-shadow: 0 0 0 0.25rem rgba(94, 211, 243, 0.25);
+        }
+
+        .form-select {
+            background-color: #0a2b36;
+            color: var(--text-primary);
+            border: 1px solid #1c4e5e;
+        }
+
+        .btn-primary {
+            background: #5ED3F3;
+            border: none;
+            border-radius: 20px;
+            padding: 12px 24px;
+            font-weight: bold;
+            color: #002B36;
+            transition: 0.3s ease-in-out;
+            box-shadow: 0 0 10px rgba(94, 211, 243, 0.5);
+        }
+
+        .btn-primary:hover {
+            background: #3AB0DD;
+            box-shadow: 0 0 20px rgba(94, 211, 243, 0.8);
+            transform: scale(1.05);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Toast styles */
+        .toast {
+            background: var(--card-bg);
+            border: 1px solid var(--primary-accent);
+            color: var(--text-primary);
+        }
+
+        .toast.bg-success {
+            border-color: #28a745;
+        }
+
+        .toast.bg-danger {
+            border-color: #dc3545;
+        }
+
+        .toast-header {
+            background: rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+        input[readonly], 
+        textarea[readonly] {
+            background-color: #0a2b36 !important;
+            border: 1px solid #2a4b5a !important;
+            color: #8bdfea !important;
+            cursor: not-allowed;
+        }
+
+        .nav-link {
+            color: var(--text-primary);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .nav-link:hover {
+            background: #2a4b5a;
+            transform: translateX(5px);
+        }
+        
+        .nav-link.active {
+            background: var(--primary-accent);
+            color: var(--dark-bg);
+        }
+    </style>
+</head>
+<body>
+    <a href="{{ url_for('logout') }}" class="btn btn-danger" 
+       style="position: fixed; right: 20px; top: 20px; z-index: 1000;">
+        <i class="fas fa-sign-out-alt"></i> Logout
+    </a>
+
+    <!-- Sidebar -->
+    <div class="sidebar position-fixed left">
+        <div class="p-3">
+            {% if current_user.role == 'admin' %}
+            <h4 class="text-center mb-4 text-primary">Admin Portal</h4>
+            {% else %}
+            <h4 class="text-center mb-4 text-primary">User Portal</h4>
+            {% endif %}
+            <nav class="nav flex-column">
+                <a class="nav-link py-3" href="{{ url_for('welcome_user') }}">
+                    <i class="fas fa-home me-2"></i>Home
+                </a>
+                <a class="nav-link py-3" href="{{ url_for('approved_tickets') }}">
+                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                </a>
+                <a class="nav-link py-3" href="{{ url_for('ticket_details') }}">
+                    <i class="fas fa-ticket-alt me-2"></i>Submit KB
+                </a>
+                <a class="nav-link py-3 active" href="{{ url_for('user_pending_tickets') }}">
+                    <i class="fas fa-clock me-2"></i>Pending KB
+                </a>
+                <a class="nav-link py-3" href="{{ url_for('submit_kb') }}">
+                    <i class="fas fa-plus-circle me-2"></i>Submit Case Study
+                </a>
+                <a class="nav-link py-3" href="{{ url_for('user_pending_kbs') }}">
+                    <i class="fas fa-tasks me-2"></i>Submitted Case Study
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content p-4">
+        <div class="container-fluid">
+            <div class="fade-in">
+                <h2 class="mb-4 fw-light">Pending KBs</h2>
+
+                <div class="search-box mb-4 position-relative">
+                    <i class="fas fa-search position-absolute" style="left: 15px; top: 50%; transform: translateY(-50%);"></i>
+                    <input type="text" class="form-control ps-4" placeholder="Search ...." id="searchInput">
+                </div>
+
+                <div class="filter-section mb-4">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <select class="form-select" id="statusFilter">
+                                <option value="all">All Statuses</option>
+                                <option value="pending" selected>Pending</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-primary w-100" onclick="applyFilters()">Apply Filters</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Pending Tickets List -->
+                <div id="ticketList" class="row g-4 mb-4">
+                    {% for ticket in tickets %}
+                    <div class="col-12 fade-in">
+                        <div class="ticket-card p-4">
+                            <div class="row">
+                                <!-- Left Column -->
+                                <div class="col-md-4 ticket-meta">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <span class="status-indicator bg-warning"></span>
+                                        <div>
+                                            <h5 class="text-primary mb-0">#{{ ticket[1] }}</h5>
+                                            <div class="text-muted small mt-1">
+                                                <div><i class="fas fa-calendar me-2"></i>{{ ticket[14] }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Middle Column -->
+                                <div class="col-md-4">
+                                    <div class="badge-container">
+                                        <div class="metadata-item">
+                                            <span class="metadata-label">Product</span>
+                                            <span class="metadata-value">{{ ticket[4] }}</span>
+                                        </div>
+                                        <div class="metadata-item">
+                                            <span class="metadata-label">Platform</span>
+                                            <span class="metadata-value">{{ ticket[5] }}</span>
+                                        </div>
+                                        <div class="metadata-item">
+                                            <span class="metadata-label">Category</span>
+                                            <span class="metadata-value">{{ ticket[8] }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Right Column -->
+                                <div class="col-md-4 action-container">
+                                    <span class="badge bg-warning">PENDING</span>
+                                    <button class="btn btn-sm btn-outline-primary edit-ticket-btn" 
+                                            data-ticket-id="{{ ticket[0] }}"
+                                            style="margin-left: 10px;">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="col-12">
+                        <div class="alert alert-dark text-center py-4">
+                            <i class="fas fa-inbox fa-2x mb-3"></i>
+                            <h4>No pending KBs found</h4>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Ticket Form (Initially hidden) -->
+                <div id="ticketFormContainer" class="form-container" style="display: none;">
+                    <h2>Update KB</h2>
+                    <form id="ticketForm" method="POST">
+                        <input type="hidden" id="ticketId" name="ticket_id">
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="cf_merchant_id">Merchant ID</label>
+                                <input type="text" class="form-control" id="cf_merchant_id" name="cf_merchant_id" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="cf_contact_number">Contact Number</label>
+                                <input type="text" class="form-control" id="cf_contact_number" name="cf_contact_number" readonly>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="cf_product">Product</label>
+                                <input type="text" class="form-control" id="cf_product" name="cf_product" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="cf_platform">Platform</label>
+                                <input type="text" class="form-control" id="cf_platform" name="cf_platform" readonly>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="cf_platform_item">Platform Item</label>
+                                <input type="text" class="form-control" id="cf_platform_item" name="cf_platform_item" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="cf_checkout">Checkout</label>
+                                <input type="text" class="form-control" id="cf_checkout" name="cf_checkout" readonly>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="cf_issue_category">Issue Category</label>
+                                <input type="text" class="form-control" id="cf_issue_category" name="cf_issue_category" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="cf_issue_sub_category">Issue Sub-Category</label>
+                                <input type="text" class="form-control" id="cf_issue_sub_category" name="cf_issue_sub_category" readonly>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="issue_description">Issue Description</label>
+                            <textarea class="form-control" id="issue_description" name="issue_description" rows="3"></textarea>
+                        </div>
+
+                        <!-- Editable fields -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="cf_agent_category">Agent Category</label>
+                                <input type="text" class="form-control" id="cf_agent_category" name="cf_agent_category" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="cf_agent_sub_category">Agent Sub-Category</label>
+                                <input type="text" class="form-control" id="cf_agent_sub_category" name="cf_agent_sub_category" readonly>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="resolution">Resolution</label>
+                                <input type="text" class="form-control" id="resolution" name="resolution">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="workaround">Workaround</label>
+                                <input type="text" class="form-control" id="workaround" name="workaround">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label for="comments">Additional Comments</label>
+                                <textarea class="form-control" id="comments" name="comments" rows="3" readonly></textarea>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Update KB</button>
+                            <button type="button" id="cancelEdit" class="btn btn-secondary mt-2">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050">
+        <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto">Notification</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="toastMessage">
+                KB updated successfully!
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // Add subtle animation to cards on load
+    document.querySelectorAll('.fade-in').forEach((el, index) => {
+        setTimeout(() => {
+            el.style.opacity = 1;
+            el.style.transform = 'translateY(0)';
+        }, index * 50);
+    });
+
+    // Show toast notification
+    function showToast(message, isError = false) {
+        const toastEl = document.getElementById("liveToast");
+        const toastBody = document.getElementById("toastMessage");
+        
+        toastBody.textContent = message;
+        toastEl.classList.remove("bg-success", "bg-danger");
+        toastEl.classList.add(isError ? "bg-danger" : "bg-success");
+
+        const toast = new bootstrap.Toast(toastEl);
+        toast.show();
+    }
+
+    // Handle edit button clicks
+    document.querySelectorAll('.edit-ticket-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const ticketId = this.getAttribute('data-ticket-id');
+            
+            // Fetch ticket details
+            fetch(`/get_tickets_details/${ticketId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        showToast(data.error, true);
+                        return;
+                    }
+                    
+                    // Populate form fields
+                    document.getElementById('ticketId').value = ticketId;
+                    document.getElementById('cf_merchant_id').value = data.cf_merchant_id || 'N/A';
+                    document.getElementById('cf_contact_number').value = data.cf_contact_number || 'N/A';
+                    document.getElementById('cf_product').value = data.cf_product || 'N/A';
+                    document.getElementById('cf_platform').value = data.cf_platform || 'N/A';
+                    document.getElementById('cf_platform_item').value = data.cf_platform_item || 'N/A';
+                    document.getElementById('cf_checkout').value = data.cf_checkout || 'N/A';
+                    document.getElementById('cf_issue_category').value = data.cf_issue_category || 'N/A';
+                    document.getElementById('cf_issue_sub_category').value = data.cf_issue_sub_category || 'N/A';
+                    document.getElementById('issue_description').value = data.description_text || 'N/A';
+                    document.getElementById('cf_agent_category').value = data.cf_agent_category || '';
+                    document.getElementById('cf_agent_sub_category').value = data.cf_agent_sub_category || '';
+                    document.getElementById('resolution').value = data.resolution || '';
+                    document.getElementById('workaround').value = data.workaround || '';
+                    document.getElementById('comments').value = data.comments || '';
+                    
+                    // Show the form and hide the list
+                    document.getElementById('ticketList').style.display = 'none';
+                    document.getElementById('ticketFormContainer').style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('Failed to load KB details', true);
+                });
+        });
+    });
+
+    // Handle cancel button
+    document.getElementById('cancelEdit').addEventListener('click', function() {
+        document.getElementById('ticketList').style.display = 'block';
+        document.getElementById('ticketFormContainer').style.display = 'none';
+    });
+
+    // Handle form submission
+    document.getElementById('ticketForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+
+        formData.append('description', document.getElementById('issue_description').value);
+        
+        fetch('/update_pending_ticket', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('KB updated successfully!');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showToast(data.error || 'Failed to update KB', true);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('An error occurred', true);
+        });
+    });
+    </script>
+    <script>
+        // Enhanced Search with Debounce
+        let searchTimeout;
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                applyFilters();
+            }, 300);
+        });
+    
+        // Function to apply both search and filters
+        function applyFilters() {
+            const status = document.getElementById('statusFilter').value;
+            const searchTerm = document.getElementById('searchInput').value;
+            
+            // Show loading state
+            const ticketList = document.getElementById('ticketList');
+            ticketList.innerHTML = '<div class="col-12"><div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x"></i></div></div>';
+            
+            // Fetch filtered and searched results from the server
+            fetch(`/user_pending_tickets/search?status_filter=${status}&search=${encodeURIComponent(searchTerm)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        ticketList.innerHTML = `
+                            <div class="col-12">
+                                <div class="alert alert-danger text-center py-4">
+                                    <i class="fas fa-exclamation-circle fa-2x mb-3"></i>
+                                    <h4>Error loading KBs</h4>
+                                    <p>${data.error}</p>
+                                </div>
+                            </div>`;
+                        return;
+                    }
+                    
+                    if (!data.tickets || data.tickets.length === 0) {
+                        ticketList.innerHTML = `
+                            <div class="col-12">
+                                <div class="alert alert-dark text-center py-4">
+                                    <i class="fas fa-inbox fa-2x mb-3"></i>
+                                    <h4>No KBs found matching your criteria</h4>
+                                </div>
+                            </div>`;
+                        return;
+                    }
+                    
+                    // Render the tickets
+                    let ticketsHTML = '';
+                    data.tickets.forEach((ticket) => {
+                        ticketsHTML += `
+                        <div class="col-12 fade-in">
+                            <div class="ticket-card p-4">
+                                <div class="row">
+                                    <!-- Left Column -->
+                                    <div class="col-md-4 ticket-meta">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <span class="status-indicator bg-warning"></span>
+                                            <div>
+                                                <h5 class="text-primary mb-0">#${ticket.ticket_id}</h5>
+                                                <div class="text-muted small mt-1">
+                                                    <div><i class="fas fa-calendar me-2"></i>${ticket.submitted_at}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Middle Column -->
+                                    <div class="col-md-4">
+                                        <div class="badge-container">
+                                            <div class="metadata-item">
+                                                <span class="metadata-label">Product</span>
+                                                <span class="metadata-value">${ticket.cf_product || 'N/A'}</span>
+                                            </div>
+                                            <div class="metadata-item">
+                                                <span class="metadata-label">Platform</span>
+                                                <span class="metadata-value">${ticket.cf_platform || 'N/A'}</span>
+                                            </div>
+                                            <div class="metadata-item">
+                                                <span class="metadata-label">Category</span>
+                                                <span class="metadata-value">${ticket.cf_issue_category || 'N/A'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+    
+                                    <!-- Right Column -->
+                                    <div class="col-md-4 action-container">
+                                        <span class="badge bg-warning">PENDING</span>
+                                        <button class="btn btn-sm btn-outline-primary edit-ticket-btn" 
+                                                data-ticket-id="${ticket.id}"
+                                                style="margin-left: 10px;">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+                    });
+                    
+                    ticketList.innerHTML = ticketsHTML;
+                    
+                    // Reattach event listeners to the new buttons
+                    document.querySelectorAll('.edit-ticket-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const ticketId = this.getAttribute('data-ticket-id');
+                            // Your existing edit button handler code
+                        });
+                    });
+                    
+                    // Add subtle animation to cards on load
+                    document.querySelectorAll('.fade-in').forEach((el, index) => {
+                        setTimeout(() => {
+                            el.style.opacity = 1;
+                            el.style.transform = 'translateY(0)';
+                        }, index * 50);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    ticketList.innerHTML = `
+                        <div class="col-12">
+                            <div class="alert alert-danger text-center py-4">
+                                <i class="fas fa-exclamation-circle fa-2x mb-3"></i>
+                                <h4>Error loading KBs</h4>
+                                <p>${error.message}</p>
+                            </div>
+                        </div>`;
+                });
+        }
+    
+        // Initialize event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Filter controls
+            document.getElementById('statusFilter').addEventListener('change', applyFilters);
+        });
+    
+        // Keep your existing showToast and edit button handlers
+    </script>
+</body>
+</html>

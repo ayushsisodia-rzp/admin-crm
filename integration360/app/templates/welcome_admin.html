@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal</title>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-accent: #5ED3F3;
+            --dark-bg: #082836;
+            --card-bg: #0a2b36;
+            --text-primary: #E3F8FF;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #06141D, #0B2B3C);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            width: 250px;
+            background: #1E3A47;
+            position: fixed;
+            height: 100%;
+            z-index: 100;
+            box-shadow: 3px 0 15px rgba(0,0,0,0.2);
+        }
+        
+        .content {
+            margin-left: 270px;
+            padding: 20px;
+            width: calc(100% - 270px);
+        }
+        
+        .welcome-card {
+            background: var(--card-bg);
+            border: 1px solid #1c4e5e;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+            animation: fadeIn 1s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .welcome-header {
+            color: #A8FF78;
+            text-shadow: 0 0 10px #A8FF78;
+            margin-bottom: 20px;
+        }
+        
+        .quick-action-card {
+            color: white !important;
+            background: rgba(10, 43, 54, 0.7);
+            border: 1px solid #1c4e5e;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+        
+        .quick-action-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(94, 211, 243, 0.3);
+            border-color: var(--primary-accent);
+        }
+        
+        .quick-action-icon {
+            font-size: 2rem;
+            color: var(--primary-accent);
+            margin-bottom: 15px;
+        }
+        
+        .nav-link {
+            color: var(--text-primary);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .nav-link:hover {
+            background: #2a4b5a;
+            transform: translateX(5px);
+        }
+        
+        .nav-link.active {
+            background: var(--primary-accent);
+            color: var(--dark-bg);
+        }
+    </style>
+</head>
+<body>
+    <a href="{{ url_for('logout') }}" class="btn btn-danger" 
+       style="position: fixed; right: 30px; top: 30px; z-index: 1000;">
+       <i class="fas fa-sign-out-alt"></i> Logout
+    </a>
+
+    <div class="sidebar position-fixed left">
+        <div class="p-3">
+            <h4 class="text-center mb-4 text-primary">Admin Portal</h4>
+            <nav class="nav flex-column">
+                <a class="nav-link py-3 active" href="{{ url_for('welcome_admin') }}">
+                    <i class="fas fa-home me-2"></i>Home
+                </a>
+                <a class="nav-link py-3" href="{{ url_for('ticket_requests') }}">
+                    <i class="fas fa-inbox me-2"></i>KB Requests
+                </a>
+                <a class="nav-link py-3" href="{{ url_for('approved_tickets_admin') }}">
+                    <i class="fas fa-tachometer-alt me-2"></i>KB Dashboard
+                </a>
+                <a class="nav-link py-3" href="{{ url_for('approve_kbs') }}">
+                    <i class="fas fa-check-circle me-2"></i>Approve Case Study
+                </a>
+                <a class="nav-link py-3" href="{{ url_for('view_kbs') }}">
+                    <i class="fas fa-tasks me-2"></i>View Case Study
+                </a>
+                <a class="nav-link py-3" href="{{ url_for('leaderboard') }}">
+                    <i class="fas fa-tasks me-2"></i>Main Leaderboard
+                </a>
+                <a class="nav-link py-3" href="{{ url_for('submit_query') }}">
+                    <i class="fas fa-question-circle me-2"></i>Submit Query
+                </a>
+                <a class="nav-link py-3" href="{{ url_for('approve_queries') }}">
+                    <i class="fas fa-question-circle me-2"></i>Query Requests
+                </a>
+                <a class="nav-link py-3" href="{{ url_for('user_leaderboard') }}">
+                    <i class="fas fa-question-circle me-2"></i>Query Leaderboard
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="welcome-card">
+            <h1 class="welcome-header text-center">Welcome, Admin!</h1>
+            
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <p class="text-center lead">What would you like to do today?</p>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-3 mb-4">
+                    <a href="{{ url_for('ticket_requests') }}" class="text-decoration-none">
+                        <div class="quick-action-card text-center">
+                            <div class="quick-action-icon">
+                                <i class="fas fa-inbox"></i>
+                            </div>
+                            <h4>KB Requests</h4>
+                            <p>Review pending KBs</p>
+                        </div>
+                    </a>
+                </div>
+                
+                <div class="col-md-3 mb-4">
+                    <a href="{{ url_for('approved_tickets_admin') }}" class="text-decoration-none">
+                        <div class="quick-action-card text-center">
+                            <div class="quick-action-icon">
+                                <i class="fas fa-tachometer-alt"></i>
+                            </div>
+                            <h4>KB Dashboard</h4>
+                            <p>View all KBs</p>
+                        </div>
+                    </a>
+                </div>
+                
+                <div class="col-md-3 mb-4">
+                    <a href="{{ url_for('approve_kbs') }}" class="text-decoration-none">
+                        <div class="quick-action-card text-center">
+                            <div class="quick-action-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <h4>Approve Case Study</h4>
+                            <p>Review Case Study</p>
+                        </div>
+                    </a>
+                </div>
+                
+                <div class="col-md-3 mb-4">
+                    <a href="{{ url_for('view_kbs') }}" class="text-decoration-none">
+                        <div class="quick-action-card text-center">
+                            <div class="quick-action-icon">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <h4>View Case Study</h4>
+                            <p>Browse Case Study</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

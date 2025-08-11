@@ -72,6 +72,7 @@ def login():
 
             send_email_otp(form.username.data, otp)
             flash("An OTP has been sent to your email address. Please verify.", "info")
+            flash(f"Your OTP is: {'otp'}", "success")
             return redirect(url_for('verify_otp'))
 
         else:
